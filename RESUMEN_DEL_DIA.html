@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas del Día</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f3f3f3;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #5a5a5a;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #ffccdd;
+        }
+
+        button {
+            background-color: #ffccdd;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #ff99cc;
+        }
+
+        .back-button {
+            background-color: #ffe6f2;
+            color: #333;
+            border: 2px solid #ffccdd;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .back-button:hover {
+            background-color: #ff99cc;
+            color: white;
+            border-color: #ff77aa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ventas del Día</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad Vendida</th>
+                <th>Total (MXN)</th>
+                <th>Fecha y Hora</th>
+            </tr>
+        </thead>
+        <tbody id="ventas-tbody">
+            <!-- Ventas dinámicas -->
+        </tbody>
+    </table>
+    <h2>Gran Total del Día: $<span id="gran-total">0.00</span></h2>
+    <button onclick="reinciarVentas()">Reiniciar Ventas</button>
+    <button onclick="generarPDF()">Descargar PDF</button>
+    <a href="MENU_PRINCIPAL.html" class="back-button">Volver al Menú Principal</a>
+
+    <script>
+        const ventasTbody = document.getElementById('ventas-tbody');
+        const granTotalSpan = document.getElementById('gran-total');
+
+        function cargarVentas() {
+            const ventasDelDia = JSON.parse(localStorage.getItem('ventasDelDia')) || [];
+            ventasTbody.innerHTML = '';
+            let granTotal = 0;
+
+            ventasDelDia.forEach(venta => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${venta.producto}</td>
+                    <td>${venta.cantidad}</td>
+                    <td>$${venta.subtotal.toFixed(2)}</td>
+                    <td>${venta.fecha}</td>
+                `;
+                ventasTbody.appendChild(row);
+                granTotal += venta.subtotal;
+            });
+
+            granTotalSpan.textContent = granTotal.toFixed(2);
+        }
+
+        function reinciarVentas() {
+            if (confirm('¿Estás seguro de reiniciar las ventas del día?')) {
+                localStorage.removeItem('ventasDelDia');
+                cargarVentas();
+                alert('Ventas reiniciadas.');
+            }
+        }
+
+        function generarPDF() {
+            const ventasDelDia = JSON.parse(localStorage.getItem('ventasDelDia')) || [];
+            const doc = new jspdf.jsPDF();
+
+            doc.text('Resumen de Ventas del Día', 10, 10);
+            let y = 20;
+
+            ventasDelDia.forEach(venta => {
+                doc.text(`Producto: ${venta.producto}`, 10, y);
+                doc.text(`Cantidad: ${venta.cantidad}`, 70, y);
+                doc.text(`Total: $${venta.subtotal.toFixed(2)}`, 110, y);
+                doc.text(`Fecha: ${venta.fecha}`, 150, y);
+                y += 10;
+
+                if (y > 280) { // Controla el límite de la página
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
+            const granTotal = granTotalSpan.textContent;
+            doc.text(`Gran Total del Día: $${granTotal}`, 10, y + 10);
+
+            doc.save('ventas_del_dia.pdf');
+        }
+
+        // Cargar ventas al iniciar la página
+        cargarVentas();
+    </script>
+</body>
+</html>
+
+
