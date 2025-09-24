@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Venta</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #e6f0fa; /* Fondo azul claro */
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        text-align: center;
+    }
+
+    h1 {
+        color: #2a61a8; /* Azul fuerte */
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 90%;
+        margin: 20px auto;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    table th, table td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    table th {
+        background-color: #a9b7cc; /* Azul grisáceo oscuro */
+        color: white;
+    }
+
+    button {
+        background-color: #d1d9e6; /* Azul claro */
+        border: none;
+        padding: 10px 20px;
+        margin: 10px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #a9b7cc; /* Azul grisáceo oscuro */
+        color: white;
+    }
+
+    .autocomplete {
+        position: relative;
+        display: inline-block;
+        width: 300px;
+    }
+
+    .autocomplete-list {
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-height: 150px;
+        overflow-y: auto;
+        z-index: 1000;
+        text-align: left;
+    }
+
+    .autocomplete-item {
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .autocomplete-item:hover {
+        background-color: #e6f0fa; /* Azul claro */
+    }
+
+    .back-button {
+        background-color: #2a61a8; /* Azul fuerte */
+        color: white;
+        border: 2px solid #1f4d87; /* Azul oscuro */
+        border-radius: 5px;
+        padding: 10px 15px;
+        font-size: 16px;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-block;
+    }
+
+    .back-button:hover {
+        background-color: #1f4d87; /* Azul más oscuro */
+        color: white;
+    }
+</style>
+
+
+
+</head>
+<body>
+    <h1>Registrar Venta</h1>
+    <div class="autocomplete">
+        <input type="text" id="buscarProducto" placeholder="Buscar producto">
+        <div id="sugerencias" class="autocomplete-list"></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="carrito">
+            <!-- Carrito dinámico -->
+        </tbody>
+    </table>
+    <h2>Total a Pagar: $<span id="total">0.00</span></h2>
+    <div>
+        <label for="efectivo">Efectivo Recibido:</label>
+        <input type="number" id="efectivo" placeholder="Monto recibido">
+        <h3>Cambio: $<span id="cambio">0.00</span></h3>
+    </div>
+    <button onclick="guardarVenta()">Guardar Venta</button>
+    <button onclick="generarTicket()">Generar Ticket</button>
+    <a href="MENU_PRINCIPAL.html" class="back-button">Volver al Menú Principal</a>
+
+    <script>
+        let inventario = JSON.parse(localStorage.getItem('tabla-alimentos') || '[]')
+            .concat(JSON.parse(localStorage.getItem('tabla-bebidas') || '[]'))
+            .concat(JSON.parse(localStorage.getItem('tabla-enlatados') || '[]'))
+            .concat(JSON.parse(localStorage.getItem('tabla-dulces') || '[]'))
+            .concat(JSON.parse(localStorage.getItem('tabla-limpieza') || '[]'));
+
+        const buscarProductoInput = document.getElementById('buscarProducto');
+        const sugerenciasDiv = document.getElementById('sugerencias');
+        const carrito = document.getElementById('carrito');
+        const totalSpan = document.getElementById('total');
+        const efectivoInput = document.getElementById('efectivo');
+        const cambioSpan = document.getElementById('cambio');
+
+        buscarProductoInput.addEventListener('input', () => {
+            const query = buscarProductoInput.value.toLowerCase();
+            sugerenciasDiv.innerHTML = '';
+
+            if (query) {
+                const resultados = inventario.filter(p =>
+                    p.producto.toLowerCase().includes(query)
+                );
+
+                resultados.forEach(producto => {
+                    const item = document.createElement('div');
+                    item.classList.add('autocomplete-item');
+                    item.textContent = `${producto.producto} (Precio: $${producto.precio}, Stock: ${producto.stock})`;
+                    item.dataset.producto = JSON.stringify(producto);
+
+                    item.addEventListener('click', () => {
+                        agregarAlCarrito(JSON.parse(item.dataset.producto));
+                        buscarProductoInput.value = '';
+                        sugerenciasDiv.innerHTML = '';
+                    });
+
+                    sugerenciasDiv.appendChild(item);
+                });
+            }
+        });
+
+        efectivoInput.addEventListener('input', () => {
+            const total = parseFloat(totalSpan.textContent);
+            const efectivo = parseFloat(efectivoInput.value) || 0;
+            const cambio = efectivo - total;
+            cambioSpan.textContent = cambio > 0 ? cambio.toFixed(2) : '0.00';
+        });
+
+        function agregarAlCarrito(producto) {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${producto.producto}</td>
+                <td><input type="number" value="1" min="1" max="${producto.stock}" data-precio="${producto.precio}" onchange="actualizarTotal()"></td>
+                <td>$${producto.precio}</td>
+                <td>$${producto.precio}</td>
+                <td><button onclick="eliminarDelCarrito(this)">Eliminar</button></td>
+            `;
+            carrito.appendChild(fila);
+            actualizarTotal();
+        }
+
+        function eliminarDelCarrito(button) {
+            button.parentElement.parentElement.remove();
+            actualizarTotal();
+        }
+
+        function actualizarTotal() {
+            let total = 0;
+            carrito.querySelectorAll('tr').forEach(fila => {
+                const cantidad = parseInt(fila.querySelector('input').value);
+                const precio = parseFloat(fila.querySelector('input').dataset.precio);
+                fila.querySelector('td:nth-child(4)').textContent = `$${(cantidad * precio).toFixed(2)}`;
+                total += cantidad * precio;
+            });
+            totalSpan.textContent = total.toFixed(2);
+            efectivoInput.dispatchEvent(new Event('input'));
+        }
+
+        function guardarVenta() {
+            const ventasDelDia = JSON.parse(localStorage.getItem('ventasDelDia')) || [];
+            const ventaActual = [];
+
+            carrito.querySelectorAll('tr').forEach(fila => {
+                const producto = fila.querySelector('td:first-child').textContent;
+                const cantidad = parseInt(fila.querySelector('input').value);
+                const precioUnitario = parseFloat(fila.querySelector('input').dataset.precio);
+                const subtotal = cantidad * precioUnitario;
+
+                ventaActual.push({
+                    producto: producto,
+                    cantidad: cantidad,
+                    precioUnitario: precioUnitario,
+                    subtotal: subtotal,
+                    fecha: new Date().toLocaleString()
+                });
+            });
+
+            ventasDelDia.push(...ventaActual);
+            localStorage.setItem('ventasDelDia', JSON.stringify(ventasDelDia));
+
+            alert('Venta guardada correctamente.');
+            carrito.innerHTML = ''; // Limpia el carrito después de guardar
+            actualizarTotal(); // Resetea el total
+        }
+
+        function generarTicket() {
+            const doc = new jspdf.jsPDF();
+            doc.text('Ticket de Compra', 10, 10);
+            let y = 20;
+
+            carrito.querySelectorAll('tr').forEach(fila => {
+                const producto = fila.querySelector('td:first-child').textContent;
+                const cantidad = fila.querySelector('input').value;
+                const subtotal = fila.querySelector('td:nth-child(4)').textContent;
+                doc.text(`${producto} - Cantidad: ${cantidad} - ${subtotal}`, 10, y);
+                y += 10;
+            });
+
+            const total = totalSpan.textContent;
+            doc.text(`Total: $${total}`, 10, y);
+            y += 10;
+
+            const efectivo = efectivoInput.value;
+            const cambio = cambioSpan.textContent;
+            doc.text(`Efectivo: $${efectivo}`, 10, y);
+            y += 10;
+            doc.text(`Cambio: $${cambio}`, 10, y);
+
+            doc.save('ticket.pdf');
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
