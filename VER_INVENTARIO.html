@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Inventario</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e6f0fa; /* Fondo azul claro */
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2a61a8; /* Azul fuerte */
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #1f4d87; /* Azul oscuro */
+            margin-top: 30px;
+        }
+
+        table {
+            width: 90%;
+            margin: 10px auto;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #a9b7cc; /* Gris más oscuro */
+            color: white;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            background-color: #2a61a8; /* Azul fuerte */
+            color: white;
+            border: 2px solid #1f4d87; /* Azul oscuro */
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .back-button:hover {
+            background-color: #1f4d87; /* Azul más oscuro */
+        }
+    </style>
+</head>
+<body>
+    <h1>Inventario de la Tienda</h1>
+    <div id="inventario-container">
+        <!-- Aquí se generarán las secciones dinámicamente -->
+    </div>
+
+    <!-- Botón para regresar al menú principal -->
+    <a href="MENU_PRINCIPAL.html" class="back-button">Volver al Menú Principal</a>
+
+    <script>
+        function cargarInventarioPorCategoria() {
+            const categorias = ['alimentos', 'bebidas', 'enlatados', 'dulces', 'limpieza'];
+            const nombresCategorias = {
+                alimentos: 'Alimentos Básicos',
+                bebidas: 'Bebidas',
+                enlatados: 'Productos Enlatados',
+                dulces: 'Botanas y Dulces',
+                limpieza: 'Productos de Limpieza'
+            };
+
+            const container = document.getElementById('inventario-container');
+            container.innerHTML = ''; // Limpiar contenido existente
+
+            categorias.forEach(categoria => {
+                const datos = JSON.parse(localStorage.getItem(`tabla-${categoria}`)) || [];
+                if (datos.length > 0) {
+                    const titulo = document.createElement('h2');
+                    titulo.textContent = nombresCategorias[categoria];
+                    container.appendChild(titulo);
+
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Marca</th>
+                                <th>Presentación</th>
+                                <th>Precio Unitario (MXN)</th>
+                                <th>Stock Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${datos.map(producto => `
+                                <tr>
+                                    <td>${producto.producto || 'N/A'}</td>
+                                    <td>${producto.marca || 'N/A'}</td>
+                                    <td>${producto.presentacion || 'N/A'}</td>
+                                    <td>$${producto.precio || '0'}</td>
+                                    <td>${producto.stock || '0'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                    container.appendChild(table);
+                }
+            });
+        }
+
+        // Cargar inventario dividido por categorías al iniciar la página
+        document.addEventListener('DOMContentLoaded', cargarInventarioPorCategoria);
+    </script>
+</body>
+</html>
+
+
+
+
