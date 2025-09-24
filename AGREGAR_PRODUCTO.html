@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e6f0fa; /* Fondo azul claro */
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2a61a8; /* Azul fuerte */
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #d1d9e6; /* Gris claro */
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #a9b7cc; /* Gris más oscuro */
+        }
+
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #a9b7cc; /* Gris más oscuro */
+            color: white;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            background-color: #2a61a8; /* Azul fuerte */
+            color: white;
+            border: 2px solid #1f4d87; /* Azul oscuro */
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background-color: #1f4d87; /* Azul más oscuro */
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestión de Inventario</h1>
+    <p>Selecciona una categoría para gestionar los productos:</p>
+    <div class="button-container">
+        <button onclick="mostrarTabla('alimentos')">Tabla 1: Alimentos Básicos</button>
+        <button onclick="mostrarTabla('bebidas')">Tabla 2: Bebidas</button>
+        <button onclick="mostrarTabla('enlatados')">Tabla 3: Productos Enlatados</button>
+        <button onclick="mostrarTabla('dulces')">Tabla 4: Botanas y Dulces</button>
+        <button onclick="mostrarTabla('limpieza')">Tabla 5: Productos de Limpieza</button>
+    </div>
+
+    <div id="tabla-container">
+        <!-- Contenedor donde se mostrarán las tablas dinámicamente -->
+    </div>
+
+    <!-- Botón para regresar al menú principal -->
+    <a href="MENU_PRINCIPAL.html" class="back-button">Volver al Menú Principal</a>
+
+    <script>
+        const tablas = {
+            alimentos: JSON.parse(localStorage.getItem('tabla-alimentos')) || [],
+            bebidas: JSON.parse(localStorage.getItem('tabla-bebidas')) || [],
+            enlatados: JSON.parse(localStorage.getItem('tabla-enlatados')) || [],
+            dulces: JSON.parse(localStorage.getItem('tabla-dulces')) || [],
+            limpieza: JSON.parse(localStorage.getItem('tabla-limpieza')) || [],
+        };
+
+        function mostrarTabla(categoria) {
+            const tabla = tablas[categoria];
+            const tablaContainer = document.getElementById('tabla-container');
+
+            tablaContainer.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Marca</th>
+                        <th>Presentación</th>
+                        <th>Precio Unitario (MXN)</th>
+                        <th>Stock Actual</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tabla.map((item, index) => `
+                        <tr>
+                            <td><input type="text" value="${item.producto}" data-index="${index}" data-field="producto" onchange="actualizarDato('${categoria}', ${index}, 'producto', this.value)"></td>
+                            <td><input type="text" value="${item.marca}" data-index="${index}" data-field="marca" onchange="actualizarDato('${categoria}', ${index}, 'marca', this.value)"></td>
+                            <td><input type="text" value="${item.presentacion}" data-index="${index}" data-field="presentacion" onchange="actualizarDato('${categoria}', ${index}, 'presentacion', this.value)"></td>
+                            <td><input type="number" value="${item.precio}" data-index="${index}" data-field="precio" onchange="actualizarDato('${categoria}', ${index}, 'precio', this.value)"></td>
+                            <td><input type="number" value="${item.stock}" data-index="${index}" data-field="stock" onchange="actualizarDato('${categoria}', ${index}, 'stock', this.value)"></td>
+                            <td><button onclick="eliminarProducto('${categoria}', ${index})">Eliminar</button></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+
+            const agregarButton = document.createElement('button');
+            agregarButton.textContent = 'Agregar Producto';
+            agregarButton.onclick = () => agregarProducto(categoria);
+
+            const guardarButton = document.createElement('button');
+            guardarButton.textContent = 'Guardar Cambios';
+            guardarButton.onclick = () => guardarTabla(categoria);
+
+            tablaContainer.appendChild(table);
+            tablaContainer.appendChild(agregarButton);
+            tablaContainer.appendChild(guardarButton);
+        }
+
+        function actualizarDato(categoria, index, campo, valor) {
+            tablas[categoria][index][campo] = valor;
+        }
+
+        function agregarProducto(categoria) {
+            tablas[categoria].push({ producto: '', marca: '', presentacion: '', precio: 0, stock: 0 });
+            mostrarTabla(categoria);
+        }
+
+        function eliminarProducto(categoria, index) {
+            tablas[categoria].splice(index, 1);
+            mostrarTabla(categoria);
+        }
+
+        function guardarTabla(categoria) {
+            localStorage.setItem(`tabla-${categoria}`, JSON.stringify(tablas[categoria]));
+            alert(`Tabla de ${categoria} guardada correctamente`);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            for (const categoria in tablas) {
+                const datosGuardados = JSON.parse(localStorage.getItem(`tabla-${categoria}`));
+                if (datosGuardados) {
+                    tablas[categoria] = datosGuardados;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
